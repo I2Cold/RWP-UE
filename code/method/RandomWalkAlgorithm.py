@@ -1,17 +1,26 @@
 import numpy as np
-from common import *
+#from common import *
 import math
-from scipy.stats import truncnorm
+#from scipy.stats import truncnorm
+
+def argmax_v(estimationr_and_noisez, constant_k):
+    action_v = np.zero(estimationr_and_noisez.size)
+    
+    ind = np.argpartition(estimationr_and_noisez, 0-constant_k)[0-constant_k:]
+    for idx in ind:
+        action_v[idx] = 1
+        
+    return action_v
 
 
 def rw_produce_v(param_gamma, constant_n, constant_k, constant_m, estimation_r, policyset_E, accumulation_z):
     action_v = np.empty(constant_n)
 
-    rand = np.random.random()
+    alpha = np.random.random()
 
     sigma = 2 * math.sqrt(constant_m * constant_m / constant_k)
     noise_z = np.random.normal(0, sigma, constant_n) + accumulation_z
-    if (rand < param_gamma):
+    if (alpha < param_gamma):
         rand_index = np.random.randint(0, constant_n)
         action_v = policyset_E[rand_index]
     else:
@@ -21,23 +30,23 @@ def rw_produce_v(param_gamma, constant_n, constant_k, constant_m, estimation_r, 
 
 
 def rw_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, constant_m, estimation_r, policyset_E, accumulation_z, defender_action):
-    result_K = np.zeros(len(estimation_r))
+    result_K = np.zeros(constant_n)
 
-    for k in range(1, (int)(param_M)+1):
+    for k in range(1, (int)(param_M)):
         end = True
         simulate_v, _ = rw_produce_v(param_gamma, constant_n, constant_k, constant_m, estimation_r, policyset_E, accumulation_z)
         for i in range(constant_n):
-            if k < param_M and simulate_v[i] == 1 and result_K[i] == 0:
+            if simulate_v[i] == 1 and result_K[i] == 0:
                 result_K[i] = k
-            elif k == param_M and result_K[i] == 0:
-                result_K[i] = param_M
-
-        for i in range(constant_n):
-            if result_K[i] == 0 and defender_action[i] == 1:
+            elif result_K[i] == 0 and defender_action[i] == 1:
                 end = False
-
+            
         if(end):
             break
+            
+    if(end == False):
+        for i in range(constant_n):
+            if result_K[i] == 0:
+                result_K[i] = param_M
 
-    return result_K
-
+    return result_K  
