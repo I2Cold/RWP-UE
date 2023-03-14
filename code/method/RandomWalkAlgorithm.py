@@ -1,7 +1,4 @@
 import numpy as np
-#from common import *
-import math
-#from scipy.stats import truncnorm
 
 def argmax_v(estimationr_and_noisez, constant_k):
     action_v = np.zero(estimationr_and_noisez.size)
@@ -13,13 +10,12 @@ def argmax_v(estimationr_and_noisez, constant_k):
     return action_v
 
 
-def rw_produce_v(param_gamma, constant_n, constant_k, constant_m, estimation_r, policyset_E, accumulation_z):
+def rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z):
     action_v = np.empty(constant_n)
 
     alpha = np.random.random()
 
-    sigma = 2 * math.sqrt(constant_m * constant_m / constant_k)
-    noise_z = np.random.normal(0, sigma, constant_n) + accumulation_z
+    noise_z = np.random.normal(0, param_sigma, constant_n) + accumulation_z
     if (alpha < param_gamma):
         rand_index = np.random.randint(0, constant_n)
         action_v = policyset_E[rand_index]
@@ -29,12 +25,12 @@ def rw_produce_v(param_gamma, constant_n, constant_k, constant_m, estimation_r, 
     return action_v, noise_z
 
 
-def rw_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, constant_m, estimation_r, policyset_E, accumulation_z, defender_action):
+def rw_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z, defender_action):
     result_K = np.zeros(constant_n)
 
     for k in range(1, (int)(param_M)):
         end = True
-        simulate_v, _ = rw_produce_v(param_gamma, constant_n, constant_k, constant_m, estimation_r, policyset_E, accumulation_z)
+        simulate_v, _ = rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z)
         for i in range(constant_n):
             if simulate_v[i] == 1 and result_K[i] == 0:
                 result_K[i] = k
