@@ -1,7 +1,7 @@
 import numpy as np
 
-def argmax_v(estimationr_and_noisez, constant_k):
-    action_v = np.zero(estimationr_and_noisez.size)
+def argmax_v(constant_n, estimationr_and_noisez, constant_k):
+    action_v = np.zeros(constant_n)
     
     ind = np.argpartition(estimationr_and_noisez, 0-constant_k)[0-constant_k:]
     for idx in ind:
@@ -20,7 +20,7 @@ def rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r,
         rand_index = np.random.randint(0, constant_n)
         action_v = policyset_E[rand_index]
     else:
-        action_v = argmax_v(estimation_r+noise_z, constant_k)
+        action_v = argmax_v(constant_n, estimation_r + noise_z, constant_k)
 
     return action_v, noise_z
 

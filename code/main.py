@@ -3,9 +3,9 @@ import time
 import numpy as np
 import random
 import math
-import matplotlib.pyplot as plt
-from method import *
-from attacker import *
+from method.RandomWalkAlgorithm import *
+from attack import *
+from plt_ import *
 
 parser = argparse.ArgumentParser(description='Repeated Security Games')
 ### scenarios config
@@ -23,18 +23,15 @@ constant_n = args.target_num
 constant_k = args.protect_num
 constant_m = args.attacker_a
 constant_T = args.repeat_round
+attacker_type = args.attacker_type
 
 param_sigma = 2 * math.sqrt(constant_m * min(constant_m, constant_k) / constant_k)
 param_gamma = math.sqrt(constant_k / constant_m / constant_T)
 param_M = int(constant_n * math.sqrt(constant_m * constant_T / constant_k) * math.log(constant_T * constant_k))
 
-
-
 utility_c = np.random.uniform(   0, 0.5, constant_n)
 utility_u = np.random.uniform(-0.5,   0, constant_n)
 utility = utility_c - utility_u
-
-attacker_type = args.attacker_type
 
 ### Pick the set of exploration strategies
 policyset_E = np.zeros((constant_n, constant_n))
@@ -56,17 +53,17 @@ def Play(attacker_type):
     regret1 = np.empty(constant_T)
     regret2 = np.empty(constant_T)
     St = np.empty(constant_T)
-    St[0, 0] = 0 #S1=0
+    St[0] = 0 #S1=0
     action_v_last = np.empty(constant_n)
     Dt = np.empty(constant_T)
-    Dt[0, 0] = 0
-    T_dx = np.array(list(range(constant_T))+1)
+    Dt[0] = 0
+    T_dx = np.array(list(range(constant_T))) + 1
     
     start = time.time()
     for rdx in range(constant_T):
         action_v, accumulation_z = rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z)
         
-        action_a = attack(constant_n, constant_m, attacker_type)
+        action_a = attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u)
         
         r = action_a * utility
         
@@ -75,8 +72,8 @@ def Play(attacker_type):
         estimation_r += K * regret_2
         
         accumulation_r += r
-        regret1[rdx] = argmax_v(accumulation_r, constant_k)
-        regret2[rdx] = regret_2
+        regret1[rdx] = np.sum(argmax_v(constant_n, accumulation_r, constant_k) * accumulation_r)
+        regret2[rdx] = np.sum(regret_2)
         if rdx:
             regret2[rdx] += regret2[rdx - 1]
             if (action_v_last != action_v).any():
@@ -91,27 +88,7 @@ def Play(attacker_type):
     Rt = regret1 - regret2
     Rt = Rt / T_dx
     
-    plt.subplot(3, 1 ,1)
-    plt.plot(T_dx, Rt, color='b', label='RWP-UE')
-    plt.xlabel('Round(t)')
-    plt.xticks(T_dx, rotation='vertical')
-    plt.ylabel('Average Regret')
-    plt.title('Against',attacker_type ,'Attacker')
-    plt.subplot(3, 1 ,2)
-    plt.plot(T_dx, St, color='b', label='RWP-UE')
-    plt.xlabel('Round(t)')
-    plt.xticks(T_dx, rotation='vertical')
-    plt.ylabel('Reallocation Times')
-    plt.title('Against',attacker_type ,'Attacker')
-    plt.subplot(3, 1 ,3)
-    plt.plot(T_dx, Dt, color='b', label='RWP-UE')
-    plt.xlabel('Round(t)')
-    plt.xticks(T_dx, rotation='vertical')
-    plt.ylabel('Reallocation Quantity')
-    plt.title('Against',attacker_type ,'Attacker')
-    plt.tight_layout()
-    plt.savefig('a.png')
-    plt.show()
+    Plt(T_dx, Rt, St, Dt, attacker_type, 'RWP-UE')
 
 ### Play repeated security games
 if attacker_type != 'All':
