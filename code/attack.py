@@ -43,5 +43,4 @@ def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, 
             
     else: #QuantalResponse
         1
-        
     return action_a

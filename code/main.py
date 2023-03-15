@@ -4,6 +4,7 @@ import numpy as np
 import random
 import math
 from method.RandomWalkAlgorithm import *
+from method.FPL_UE import *
 from attack import *
 from plt_ import *
 
@@ -26,6 +27,7 @@ constant_T = args.repeat_round
 attacker_type = args.attacker_type
 
 param_sigma = 2 * math.sqrt(constant_m * min(constant_m, constant_k) / constant_k)
+param_eta = math.sqrt(k * (math.log(constant_n)+1) / constant_m /constant_T / min(constant_m, constant_k))
 param_gamma = math.sqrt(constant_k / constant_m / constant_T)
 param_M = int(constant_n * math.sqrt(constant_m * constant_T / constant_k) * math.log(constant_T * constant_k))
 
@@ -44,8 +46,52 @@ for idx in range(constant_n):
     for gendx in idx_list:
         policyset_E[idx, gendx] = 1
     
-def Play(attacker_type):
-    print(attacker_type)
+def Play_FPLUE(attacker_type, T_dx):
+    print('FPLUE - ', attacker_type)
+    ### Initialize the cumulative estimated reward and random walks with 0
+    estimation_r = np.zeros(constant_n)
+    accumulation_r = np.zeros(constant_n)
+    regret1 = np.empty(constant_T)
+    regret2 = np.empty(constant_T)
+    St = np.empty(constant_T)
+    St[0] = 0 #S1=0
+    action_v_last = np.empty(constant_n)
+    Dt = np.empty(constant_T)
+    Dt[0] = 0
+    
+    start = time.time()
+    for rdx in range(constant_T):
+        action_v = fp_produce_v(param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E)
+        
+        action_a = attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u)
+        
+        r = action_a * utility
+        
+        K = fp_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E)
+        regret_2 = action_v * r
+        estimation_r += K * regret_2
+        
+        accumulation_r += r
+        regret1[rdx] = np.sum(argmax_v(constant_n, accumulation_r, constant_k) * accumulation_r)
+        regret2[rdx] = np.sum(regret_2)
+        if rdx:
+            regret2[rdx] += regret2[rdx - 1]
+            if (action_v_last != action_v).any():
+                St[rdx] = St[rdx - 1] + 1
+            else:
+                St[rdx] = St[rdx - 1]
+            Dt[rdx] = Dt[rdx - 1] + np.count_nonzero(action_v_last - action_v) / 2
+            
+        action_v_last = action_v
+        
+    print('Running Time:\t {:.3f}'.format(time.time() - start))
+    Rt = regret1 - regret2
+    Rt = Rt / T_dx
+    
+    return Rt, St, Dt
+    
+def Play_RWP(attacker_type, T_dx):
+    print('RWP - ', attacker_type)
     ### Initialize the cumulative estimated reward and random walks with 0
     estimation_r = np.zeros(constant_n)
     accumulation_z = np.zeros(constant_n)
@@ -57,7 +103,6 @@ def Play(attacker_type):
     action_v_last = np.empty(constant_n)
     Dt = np.empty(constant_T)
     Dt[0] = 0
-    T_dx = np.array(list(range(constant_T))) + 1
     
     start = time.time()
     for rdx in range(constant_T):
@@ -88,20 +133,24 @@ def Play(attacker_type):
     Rt = regret1 - regret2
     Rt = Rt / T_dx
     
-    Plt(T_dx, Rt, St, Dt, attacker_type, 'RWP-UE')
+    return Rt, St, Dt
 
+def Play(attacker_type):
+    T_dx = np.array(list(range(constant_T))) + 1
+    Rt_rw, St_rw, Dt_rw = Play_RWP(attacker_type, T_dx)
+    Rt_fp, St_fp, Dt_fp = Play_FPLUE(attacker_type, T_dx)
+    Plt(T_dx, Rt_rw, St_rw, Dt_rw, Rt_fp, St_fp, Dt_fp, attacker_type)
+
+#list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial', 'QuantalResponse']
+list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial']
 ### Play repeated security games
 if attacker_type != 'All':
-    Play(attacker_type)
+    Play_RWP(attacker_type)
+    Play_FPLUE(attacker_type)
 else: #'All'
-    Play('Uniform')
-    Play('BestResponse')
-    Play('Adversarial')
-    Play('QuantalResponse')
-
-
-
-
+    for a_type in list_attacker_type:
+        Play_RWP(a_type)
+        Play_FPLUE(a_type)
 
 
 
