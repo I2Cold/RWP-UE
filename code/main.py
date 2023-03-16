@@ -8,6 +8,11 @@ from method.FPL_UE import *
 from attack import *
 from plt_ import *
 
+'''
+echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc
+export DISPLAY=:0.0
+'''
+
 parser = argparse.ArgumentParser(description='Repeated Security Games')
 ### scenarios config
 parser.add_argument('--target_num', default=150 , type=int, help='the number of targets')
@@ -27,7 +32,7 @@ constant_T = args.repeat_round
 attacker_type = args.attacker_type
 
 param_sigma = 2 * math.sqrt(constant_m * min(constant_m, constant_k) / constant_k)
-param_eta = math.sqrt(k * (math.log(constant_n)+1) / constant_m /constant_T / min(constant_m, constant_k))
+param_eta = math.sqrt(constant_k * (math.log(constant_n)+1) / constant_m /constant_T / min(constant_m, constant_k))
 param_gamma = math.sqrt(constant_k / constant_m / constant_T)
 param_M = int(constant_n * math.sqrt(constant_m * constant_T / constant_k) * math.log(constant_T * constant_k))
 
@@ -145,12 +150,10 @@ def Play(attacker_type):
 list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial']
 ### Play repeated security games
 if attacker_type != 'All':
-    Play_RWP(attacker_type)
-    Play_FPLUE(attacker_type)
+    Play(attacker_type)
 else: #'All'
     for a_type in list_attacker_type:
-        Play_RWP(a_type)
-        Play_FPLUE(a_type)
+        Play(a_type)
 
 
 

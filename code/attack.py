@@ -5,8 +5,9 @@ pre_v = 1
 
 def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u):
     action_a = np.zeros(constant_n)
+    global pre_v
     
-	if attacker_type == 'Uniform':
+    if attacker_type == 'Uniform':
         idx_list = list(range(constant_n))
         random.shuffle(idx_list)
         idx_list = idx_list[:constant_m]
@@ -23,7 +24,7 @@ def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, 
         
         pre_v_i = pre_v - np.ones(constant_n)
         pre_au = pre_v_i * utility_u
-        ind = np.argpartition(pre_au, 0-constant_k)[0-constant_k:]
+        ind = np.argpartition(pre_au, 0-constant_m)[0-constant_m:]
         for idx in ind:
             action_a[idx] = 1
         
@@ -37,7 +38,7 @@ def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, 
            
         pre_v_i = pre_v - np.ones(constant_n)
         pre_du = pre_v_i * utility_c
-        ind = np.argpartition(pre_du, 0-constant_k)[0-constant_k:]
+        ind = np.argpartition(pre_du, 0-constant_m)[0-constant_m:]
         for idx in ind:
             action_a[idx] = 1
             

@@ -25,7 +25,7 @@ def fp_produce_v(param_gamma, constant_n, constant_k, param_eta, estimation_r, p
     return action_v
 
 
-def fp_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E, accumulation_z):
+def fp_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E):
     result_K = np.zeros(constant_n)
 
     for k in range(1, (int)(param_M)):
