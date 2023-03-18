@@ -25,7 +25,7 @@ def rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r,
 
 def rw_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z, defender_action):
     result_K = np.zeros(constant_n)
-
+    end = True
     for k in range(1, (int)(param_M)):
         end = True
         simulate_v, _ = rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z)

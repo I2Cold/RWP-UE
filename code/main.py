@@ -57,17 +57,6 @@ for idx in range(constant_n):
     for gendx in idx_list:
         policyset_E[idx, gendx] = 1
 
-def argmin_v(constant_n, estimationr_and_noisez):
-    
-    max_value = -10000
-    for v in policyset_E:
-        value = - np.sum(v * estimationr_and_noisez)
-        if max_value < value:
-            max_value = value
-            action_v = v
-        
-    return action_v
-
 def FPL_Algorithm(attacker_type, T_dx):
     print('FPL - ', attacker_type)
     ### Initialize the cumulative estimated reward and random walks with 0
@@ -84,29 +73,19 @@ def FPL_Algorithm(attacker_type, T_dx):
     start = time.time()
     for rdx in range(constant_T):
         z = np.random.exponential(param_eta, constant_n)
-        action_v = argmin_v(constant_n, estimation_r - z)
+        action_v = argmin_v(constant_n, estimation_r - z, policyset_E)
         
         action_a = attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u)
         
         r = action_a * utility
         
-        K = np.ones(constant_n) * param_M
-        k = 0
-        for n in range(1,param_M):
-            z_ = np.random.exponential(param_eta, constant_n)
-            action_v_ = argmin_v(constant_n, estimation_r - z_)
-            for jdx in range(constant_n):
-                if action_v_[jdx] == 1 and K[jdx] == param_M:
-                    K[jdx] = n
-                    k = k + 1
-                    if k==np.sum(action_v):
-                        break
+        K = fpl_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E, action_v)
         
         regret_2 = action_v * r
         estimation_r += K * regret_2
         
         accumulation_r += r
-        regret1[rdx] = np.sum(argmin_v(constant_n, accumulation_r) * accumulation_r)
+        regret1[rdx] = np.sum(argmin_v(constant_n, accumulation_r, policyset_E) * accumulation_r)
         regret2[rdx] = np.sum(regret_2)
         if rdx:
             regret2[rdx] += regret2[rdx - 1]
@@ -145,13 +124,13 @@ def FPLUE_Algorithm(attacker_type, T_dx):
         
         r = action_a * utility
         
-        K = fp_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E)
+        K = fplue_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E, action_v)
         regret_2 = action_v * r
         estimation_r += K * regret_2
         
         accumulation_r += r
         regret1[rdx] = np.sum(argmax_v(constant_n, accumulation_r, constant_k) * accumulation_r)
-        regret2[rdx] = (1 - param_gamma) * np.sum(regret_2) + param_gamma * np.sum(np.sum(r * policyset_E))
+        regret2[rdx] = (1 - param_gamma) * np.sum(regret_2) + param_gamma * np.sum(np.sum(r * policyset_E)) / constant_n
         if rdx:
             regret2[rdx] += regret2[rdx - 1]
             if (action_v_last != action_v).any():
@@ -159,7 +138,7 @@ def FPLUE_Algorithm(attacker_type, T_dx):
             else:
                 St[rdx] = St[rdx - 1]
             Dt[rdx] = Dt[rdx - 1] + np.count_nonzero(action_v_last - action_v) / 2
-            
+        
         action_v_last = action_v
         
     print('Running Time:\t {:.3f}'.format(time.time() - start))
@@ -196,7 +175,7 @@ def RWPUE_Algorithm(attacker_type, T_dx):
         
         accumulation_r += r
         regret1[rdx] = np.sum(argmax_v(constant_n, accumulation_r, constant_k) * accumulation_r)
-        regret2[rdx] = (1 - param_gamma) * np.sum(regret_2) + param_gamma * np.sum(np.sum(r * policyset_E))
+        regret2[rdx] = (1 - param_gamma) * np.sum(regret_2) + param_gamma * np.sum(np.sum(r * policyset_E)) / constant_n
         if rdx:
             regret2[rdx] += regret2[rdx - 1]
             if (action_v_last != action_v).any():

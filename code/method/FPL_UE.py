@@ -1,5 +1,48 @@
 import numpy as np
 
+def argmin_v(constant_n, estimationr_and_noisez, policyset_E):
+    
+    max_value = -100
+    idx = 0
+    for i in range(constant_n):
+        value = np.sum(policyset_E[i] * estimationr_and_noisez)
+        if max_value < value:
+            max_value = value
+            idx = i
+        
+    return policyset_E[idx]
+
+def fpl_produce_v(param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E):
+    action_v = np.empty(constant_n)
+
+    z = np.random.exponential(param_eta, constant_n)
+    action_v = argmin_v(constant_n, estimation_r + z, policyset_E)
+
+    return action_v
+
+def fpl_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E, defender_action):
+    result_K = np.zeros(constant_n)
+    end = True
+    for k in range(1, (int)(param_M)):
+        end = True
+        simulate_v = fpl_produce_v(param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E)
+        for i in range(constant_n):
+            if simulate_v[i] == 1 and result_K[i] == 0:
+                result_K[i] = k
+            elif result_K[i] == 0 and defender_action[i]==1:
+            # improved FPL-UE, running faster
+                end = False
+            
+        if(end):
+            break
+            
+    if(end == False):
+        for i in range(constant_n):
+            if result_K[i] == 0:
+                result_K[i] = param_M
+
+    return result_K
+
 def argmax_v(constant_n, estimationr_and_noisez, constant_k):
     action_v = np.zeros(constant_n)
     
@@ -22,7 +65,7 @@ def fp_produce_v(param_gamma, constant_n, constant_k, param_eta, estimation_r, p
 
     return action_v
 
-def fp_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E):
+def fplue_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E, defender_action):
     result_K = np.zeros(constant_n)
     end = True
     for k in range(1, (int)(param_M)):
@@ -31,7 +74,8 @@ def fp_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, esti
         for i in range(constant_n):
             if simulate_v[i] == 1 and result_K[i] == 0:
                 result_K[i] = k
-            elif result_K[i] == 0:
+            elif result_K[i] == 0 and defender_action[i]==1:
+            # improved FPL-UE, running faster
                 end = False
             
         if(end):
