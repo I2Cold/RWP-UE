@@ -2,6 +2,7 @@ import numpy as np
 import random
 
 pre_v = 1
+param_lambda = 2
 
 def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u):
     action_a = np.zeros(constant_n)
@@ -22,9 +23,8 @@ def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, 
         else: #rdx==0
             pre_v = np.ones(constant_n) / constant_n
         
-        pre_v_i = pre_v - np.ones(constant_n)
-        pre_au = pre_v_i * utility_u
-        ind = np.argpartition(pre_au, 0-constant_m)[0-constant_m:]
+        Ua = (pre_v - 1) * utility_u
+        ind = np.argpartition(Ua, 0-constant_m)[0-constant_m:]
         for idx in ind:
             action_a[idx] = 1
         
@@ -36,12 +36,39 @@ def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, 
         else: #rdx==0
             pre_v = np.ones(constant_n) / constant_n
            
-        pre_v_i = pre_v - np.ones(constant_n)
-        pre_du = pre_v_i * utility_c
-        ind = np.argpartition(pre_du, 0-constant_m)[0-constant_m:]
+        Ud = (pre_v - 1) * utility_u - pre_v * utility_c
+        ind = np.argpartition(Ud, 0-constant_m)[0-constant_m:]
         for idx in ind:
             action_a[idx] = 1
             
     else: #QuantalResponse
-        1
+        if rdx > 1:
+            pre_v = pre_v + (action_v_last - pre_v) / rdx
+        elif rdx: #rdx==1
+            pre_v = action_v_last
+        else: #rdx==0
+            pre_v = np.ones(constant_n) / constant_n
+        
+        # Ud = pre_v * utility_c
+        Ua = (pre_v - 1) * utility_u
+        exp_Ua = np.exp(Ua * param_lambda)
+        q = exp_Ua / np.sum(exp_Ua)
+        accu_q = np.empty(constant_n)
+        accu_q[0] = q[0]
+        for idx in range(1, constant_n):
+            accu_q[idx] = accu_q[idx - 1] + q[idx]
+        for i in range(constant_m):
+            end = False
+            while(1):
+                a = np.random.random()
+                for idx in range(constant_n):
+                    if a <= accu_q[idx]:
+                        if action_a[idx] == 0:
+                            action_a[idx] = 1
+                            end = True
+                        break
+                
+                if (end):
+                    break
+        
     return action_a

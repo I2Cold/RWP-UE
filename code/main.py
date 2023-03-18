@@ -42,6 +42,8 @@ param_eta = math.sqrt(constant_k * (math.log(constant_n)+1) / constant_m /consta
 param_gamma = math.sqrt(constant_k / constant_m / constant_T)
 param_M = int(constant_n * math.sqrt(constant_m * constant_T / constant_k) * math.log(constant_T * constant_k))
 
+print("sigma:", param_sigma, " eta:", param_eta, " gamma:", param_gamma, " M:", param_M)
+
 utility_c = np.random.uniform(   0, 0.5, constant_n)
 utility_u = np.random.uniform(-0.5,   0, constant_n)
 utility = utility_c - utility_u
@@ -152,8 +154,8 @@ def Play(attacker_type, save_path):
     Rt_fp, St_fp, Dt_fp = FPLUE_Algorithm(attacker_type, T_dx)
     Plt(T_dx, Rt_rw, St_rw, Dt_rw, Rt_fp, St_fp, Dt_fp, attacker_type, save_path)
 
-#list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial', 'QuantalResponse']
-list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial']
+list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial', 'QuantalResponse']
+#list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial']
     
 ### Play repeated security games
 if attacker_type != 'All':
