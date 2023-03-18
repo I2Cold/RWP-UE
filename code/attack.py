@@ -42,6 +42,7 @@ def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, 
             action_a[idx] = 1
             
     else: #QuantalResponse
+        #BRQR, not SU-BRQR
         if rdx > 1:
             pre_v = pre_v + (action_v_last - pre_v) / rdx
         elif rdx: #rdx==1
@@ -54,21 +55,17 @@ def attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, 
         exp_Ua = np.exp(Ua * param_lambda)
         q = exp_Ua / np.sum(exp_Ua)
         accu_q = np.empty(constant_n)
-        accu_q[0] = q[0]
+        accu_q[0] = q[0]       
         for idx in range(1, constant_n):
             accu_q[idx] = accu_q[idx - 1] + q[idx]
-        for i in range(constant_m):
-            end = False
-            while(1):
-                a = np.random.random()
-                for idx in range(constant_n):
-                    if a <= accu_q[idx]:
-                        if action_a[idx] == 0:
-                            action_a[idx] = 1
-                            end = True
-                        break
-                
-                if (end):
+        k = 0
+        while( k < constant_m):
+            a = np.random.random()
+            for idx in range(constant_n):
+                if a <= accu_q[idx]:
+                    if action_a[idx] == 0:
+                        action_a[idx] = 1
+                        k += 1
                     break
         
     return action_a
