@@ -57,52 +57,6 @@ for idx in range(constant_n):
     for gendx in idx_list:
         policyset_E[idx, gendx] = 1
 
-def FPL_Algorithm(attacker_type, T_dx):
-    print('FPL - ', attacker_type)
-    ### Initialize the cumulative estimated reward and random walks with 0
-    estimation_r = np.zeros(constant_n)
-    accumulation_r = np.zeros(constant_n)
-    regret1 = np.empty(constant_T)
-    regret2 = np.empty(constant_T)
-    St = np.empty(constant_T)
-    St[0] = 0 #S1=0
-    action_v_last = np.empty(constant_n)
-    Dt = np.empty(constant_T)
-    Dt[0] = 0
-    
-    start = time.time()
-    for rdx in range(constant_T):
-        z = np.random.exponential(param_eta, constant_n)
-        action_v = argmin_v(constant_n, estimation_r - z, policyset_E)
-        
-        action_a = attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u)
-        
-        r = action_a * utility
-        
-        K = fpl_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E, action_v)
-        
-        regret_2 = action_v * r
-        estimation_r += K * regret_2
-        
-        accumulation_r += r
-        regret1[rdx] = np.sum(argmin_v(constant_n, accumulation_r, policyset_E) * accumulation_r)
-        regret2[rdx] = np.sum(regret_2)
-        if rdx:
-            regret2[rdx] += regret2[rdx - 1]
-            if (action_v_last != action_v).any():
-                St[rdx] = St[rdx - 1] + 1
-            else:
-                St[rdx] = St[rdx - 1]
-            Dt[rdx] = Dt[rdx - 1] + np.count_nonzero(action_v_last - action_v) / 2
-            
-        action_v_last = action_v
-        
-    print('Running Time:\t {:.3f}'.format(time.time() - start))
-    Rt = regret1 - regret2
-    Rt = Rt / T_dx
-    
-    return Rt, St, Dt
-
 def FPLUE_Algorithm(attacker_type, T_dx):
     print('FPLUE - ', attacker_type)
     ### Initialize the cumulative estimated reward and random walks with 0
@@ -196,8 +150,7 @@ def Play(attacker_type, save_path):
     T_dx = np.array(list(range(constant_T))) + 1
     Rt_rw, St_rw, Dt_rw = RWPUE_Algorithm(attacker_type, T_dx)
     Rt_fp, St_fp, Dt_fp = FPLUE_Algorithm(attacker_type, T_dx)
-    Rt_fpl, St_fpl, Dt_fpl = FPL_Algorithm(attacker_type, T_dx)
-    Plt(T_dx, Rt_rw, St_rw, Dt_rw, Rt_fp, St_fp, Dt_fp, Rt_fpl, St_fpl, Dt_fpl, attacker_type, save_path)
+    Plt(T_dx, Rt_rw, St_rw, Dt_rw, Rt_fp, St_fp, Dt_fp, attacker_type, save_path)
 
 #list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial', 'QuantalResponse']
 list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial']
