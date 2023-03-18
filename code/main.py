@@ -7,6 +7,7 @@ from method.RandomWalkAlgorithm import *
 from method.FPL_UE import *
 from attack import *
 from plt_ import *
+import os
 
 '''
 echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc
@@ -19,9 +20,14 @@ parser.add_argument('--target_num', default=150 , type=int, help='the number of 
 parser.add_argument('--protect_num', default=15, type=int, help='the number of resources that defender will allocates')
 parser.add_argument('--repeat_round', default=1500, type=int, help='the round that process will repeat')
 parser.add_argument('--attacker_a', default=10, type=int, help='the ability of attacker')
-parser.add_argument('--attacker_type', default='Uniform', type=str, help='attacker types: [Uniform, BestResponse, Adversarial, QuantalResponse or All]')
+parser.add_argument('--attacker_type', default='All', type=str, help='attacker types: [Uniform, BestResponse, Adversarial, QuantalResponse or All]')
+parser.add_argument('--save_path', default='result', type=str, help='result save path')
 
 args = parser.parse_args()
+
+save_path = args.save_path
+if not os.path.isdir(save_path):
+    os.makedirs(save_path)
 
 print("==========\nArgs:{}\n==========".format(args))
 
@@ -50,8 +56,75 @@ for idx in range(constant_n):
     policyset_E[idx, idx] = 1
     for gendx in idx_list:
         policyset_E[idx, gendx] = 1
+
+def argmin_v(constant_n, estimationr_and_noisez):
     
-def Play_FPLUE(attacker_type, T_dx):
+    max_value = -10000
+    for v in policyset_E:
+        value = - np.sum(v * estimationr_and_noisez)
+        if max_value < value:
+            max_value = value
+            action_v = v
+        
+    return action_v
+
+def FPL_Algorithm(attacker_type, T_dx):
+    print('FPL - ', attacker_type)
+    ### Initialize the cumulative estimated reward and random walks with 0
+    estimation_r = np.zeros(constant_n)
+    accumulation_r = np.zeros(constant_n)
+    regret1 = np.empty(constant_T)
+    regret2 = np.empty(constant_T)
+    St = np.empty(constant_T)
+    St[0] = 0 #S1=0
+    action_v_last = np.empty(constant_n)
+    Dt = np.empty(constant_T)
+    Dt[0] = 0
+    
+    start = time.time()
+    for rdx in range(constant_T):
+        z = np.random.exponential(param_eta, constant_n)
+        action_v = argmin_v(constant_n, estimation_r - z)
+        
+        action_a = attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u)
+        
+        r = action_a * utility
+        
+        K = np.ones(constant_n) * param_M
+        k = 0
+        for n in range(1,param_M):
+            z_ = np.random.exponential(param_eta, constant_n)
+            action_v_ = argmin_v(constant_n, estimation_r - z_)
+            for jdx in range(constant_n):
+                if action_v_[jdx] == 1 and K[jdx] == param_M:
+                    K[jdx] = n
+                    k = k + 1
+                    if k==np.sum(action_v):
+                        break
+        
+        regret_2 = action_v * r
+        estimation_r += K * regret_2
+        
+        accumulation_r += r
+        regret1[rdx] = np.sum(argmin_v(constant_n, accumulation_r) * accumulation_r)
+        regret2[rdx] = np.sum(regret_2)
+        if rdx:
+            regret2[rdx] += regret2[rdx - 1]
+            if (action_v_last != action_v).any():
+                St[rdx] = St[rdx - 1] + 1
+            else:
+                St[rdx] = St[rdx - 1]
+            Dt[rdx] = Dt[rdx - 1] + np.count_nonzero(action_v_last - action_v) / 2
+            
+        action_v_last = action_v
+        
+    print('Running Time:\t {:.3f}'.format(time.time() - start))
+    Rt = regret1 - regret2
+    Rt = Rt / T_dx
+    
+    return Rt, St, Dt
+
+def FPLUE_Algorithm(attacker_type, T_dx):
     print('FPLUE - ', attacker_type)
     ### Initialize the cumulative estimated reward and random walks with 0
     estimation_r = np.zeros(constant_n)
@@ -78,7 +151,7 @@ def Play_FPLUE(attacker_type, T_dx):
         
         accumulation_r += r
         regret1[rdx] = np.sum(argmax_v(constant_n, accumulation_r, constant_k) * accumulation_r)
-        regret2[rdx] = np.sum(regret_2)
+        regret2[rdx] = (1 - param_gamma) * np.sum(regret_2) + param_gamma * np.sum(np.sum(r * policyset_E))
         if rdx:
             regret2[rdx] += regret2[rdx - 1]
             if (action_v_last != action_v).any():
@@ -94,8 +167,8 @@ def Play_FPLUE(attacker_type, T_dx):
     Rt = Rt / T_dx
     
     return Rt, St, Dt
-    
-def Play_RWP(attacker_type, T_dx):
+
+def RWPUE_Algorithm(attacker_type, T_dx):
     print('RWP - ', attacker_type)
     ### Initialize the cumulative estimated reward and random walks with 0
     estimation_r = np.zeros(constant_n)
@@ -123,7 +196,7 @@ def Play_RWP(attacker_type, T_dx):
         
         accumulation_r += r
         regret1[rdx] = np.sum(argmax_v(constant_n, accumulation_r, constant_k) * accumulation_r)
-        regret2[rdx] = np.sum(regret_2)
+        regret2[rdx] = (1 - param_gamma) * np.sum(regret_2) + param_gamma * np.sum(np.sum(r * policyset_E))
         if rdx:
             regret2[rdx] += regret2[rdx - 1]
             if (action_v_last != action_v).any():
@@ -139,23 +212,21 @@ def Play_RWP(attacker_type, T_dx):
     Rt = Rt / T_dx
     
     return Rt, St, Dt
-
-def Play(attacker_type):
+    
+def Play(attacker_type, save_path):
     T_dx = np.array(list(range(constant_T))) + 1
-    Rt_rw, St_rw, Dt_rw = Play_RWP(attacker_type, T_dx)
-    Rt_fp, St_fp, Dt_fp = Play_FPLUE(attacker_type, T_dx)
-    Plt(T_dx, Rt_rw, St_rw, Dt_rw, Rt_fp, St_fp, Dt_fp, attacker_type)
+    Rt_rw, St_rw, Dt_rw = RWPUE_Algorithm(attacker_type, T_dx)
+    Rt_fp, St_fp, Dt_fp = FPLUE_Algorithm(attacker_type, T_dx)
+    Rt_fpl, St_fpl, Dt_fpl = FPL_Algorithm(attacker_type, T_dx)
+    Plt(T_dx, Rt_rw, St_rw, Dt_rw, Rt_fp, St_fp, Dt_fp, Rt_fpl, St_fpl, Dt_fpl, attacker_type, save_path)
 
 #list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial', 'QuantalResponse']
 list_attacker_type = ['Uniform', 'BestResponse', 'Adversarial']
+    
 ### Play repeated security games
 if attacker_type != 'All':
-    Play(attacker_type)
+    Play(attacker_type, save_path)
 else: #'All'
     for a_type in list_attacker_type:
-        Play(a_type)
-
-
-
-
+        Play(a_type, save_path)
 

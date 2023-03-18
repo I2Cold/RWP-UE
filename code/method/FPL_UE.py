@@ -9,25 +9,22 @@ def argmax_v(constant_n, estimationr_and_noisez, constant_k):
         
     return action_v
 
-
 def fp_produce_v(param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E):
     action_v = np.empty(constant_n)
 
     alpha = np.random.random()
-
-    noise_z = np.random.exponential(param_eta, constant_n)
     if (alpha < param_gamma):
         rand_index = np.random.randint(0, constant_n)
         action_v = policyset_E[rand_index]
     else:
-        action_v = argmax_v(constant_n, estimation_r + noise_z, constant_k)
+        z = np.random.exponential(param_eta, constant_n)
+        action_v = argmax_v(constant_n, estimation_r + z, constant_k)
 
     return action_v
 
-
 def fp_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E):
     result_K = np.zeros(constant_n)
-
+    end = True
     for k in range(1, (int)(param_M)):
         end = True
         simulate_v = fp_produce_v(param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E)
@@ -45,4 +42,4 @@ def fp_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, esti
             if result_K[i] == 0:
                 result_K[i] = param_M
 
-    return result_K  
+    return result_K

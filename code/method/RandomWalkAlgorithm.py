@@ -14,16 +14,14 @@ def rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r,
     action_v = np.empty(constant_n)
 
     alpha = np.random.random()
-
-    noise_z = np.random.normal(0, param_sigma, constant_n) + accumulation_z
     if (alpha < param_gamma):
         rand_index = np.random.randint(0, constant_n)
         action_v = policyset_E[rand_index]
     else:
-        action_v = argmax_v(constant_n, estimation_r + noise_z, constant_k)
+        accumulation_z = np.random.normal(0, param_sigma, constant_n) + accumulation_z
+        action_v = argmax_v(constant_n, estimation_r + accumulation_z, constant_k)
 
-    return action_v, noise_z
-
+    return action_v, accumulation_z
 
 def rw_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z, defender_action):
     result_K = np.zeros(constant_n)
@@ -45,4 +43,4 @@ def rw_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_sigma, es
             if result_K[i] == 0:
                 result_K[i] = param_M
 
-    return result_K  
+    return result_K
