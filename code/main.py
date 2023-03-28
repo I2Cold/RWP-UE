@@ -49,15 +49,17 @@ utility_u = np.random.uniform(-0.5,   0, constant_n)
 utility = utility_c - utility_u
 
 ### Pick the set of exploration strategies
-policyset_E = np.zeros((constant_n, constant_n))
-for idx in range(constant_n):
-    idx_list = list(range(constant_n))
-    idx_list.pop(idx)
-    random.shuffle(idx_list)
-    idx_list = idx_list[:constant_k]
-    policyset_E[idx, idx] = 1
-    for gendx in idx_list:
-        policyset_E[idx, gendx] = 1
+def init_policyset():
+    policyset_E = np.zeros((constant_n, constant_n))
+    for idx in range(constant_n):
+        idx_list = list(range(constant_n))
+        idx_list.pop(idx)
+        random.shuffle(idx_list)
+        idx_list = idx_list[:constant_k - 1]
+        policyset_E[idx, idx] = 1
+        for gendx in idx_list:
+            policyset_E[idx, gendx] = 1
+    return policyset_E
 
 def FPLUE_Algorithm(attacker_type, T_dx):
     print('FPLUE - ', attacker_type)
@@ -74,6 +76,7 @@ def FPLUE_Algorithm(attacker_type, T_dx):
     
     start = time.time()
     for rdx in range(constant_T):
+        policyset_E = init_policyset()
         action_v = fp_produce_v(param_gamma, constant_n, constant_k, param_eta, estimation_r, policyset_E)
         
         action_a = attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u)
@@ -119,6 +122,7 @@ def RWPUE_Algorithm(attacker_type, T_dx):
     
     start = time.time()
     for rdx in range(constant_T):
+        policyset_E = init_policyset()
         action_v, accumulation_z = rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z)
         
         action_a = attack_produce_v(constant_n, constant_m, attacker_type, rdx, action_v_last, utility_c, utility_u)

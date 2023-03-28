@@ -40,7 +40,7 @@ def fplue_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_eta, e
             
     if(end == False):
         for i in range(constant_n):
-            if result_K[i] == 0:
+            if result_K[i] == 0 and defender_action[i] == 1:
                 result_K[i] = param_M
 
     return result_K

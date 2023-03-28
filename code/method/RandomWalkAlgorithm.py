@@ -12,13 +12,14 @@ def argmax_v(constant_n, estimationr_and_noisez, constant_k):
 
 def rw_produce_v(param_gamma, constant_n, constant_k, param_sigma, estimation_r, policyset_E, accumulation_z):
     action_v = np.empty(constant_n)
-
+    
+    accumulation_z = np.random.normal(0, param_sigma, constant_n) + accumulation_z
+    
     alpha = np.random.random()
     if (alpha < param_gamma):
         rand_index = np.random.randint(0, constant_n)
         action_v = policyset_E[rand_index]
     else:
-        accumulation_z = np.random.normal(0, param_sigma, constant_n) + accumulation_z
         action_v = argmax_v(constant_n, estimation_r + accumulation_z, constant_k)
 
     return action_v, accumulation_z
@@ -40,7 +41,7 @@ def rw_GRAlgorithm(param_M, param_gamma, constant_n, constant_k, param_sigma, es
             
     if(end == False):
         for i in range(constant_n):
-            if result_K[i] == 0:
+            if result_K[i] == 0 and defender_action[i] == 1:
                 result_K[i] = param_M
 
     return result_K
